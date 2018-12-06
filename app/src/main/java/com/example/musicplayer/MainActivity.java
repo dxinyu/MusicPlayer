@@ -38,7 +38,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_PERMISSION = 0;
     MediaPlayer mediaPlayer=new MediaPlayer();
     ListView listView ;
-    ArrayList<String> arrayList = new ArrayList<String>();
+    ArrayList<String> songNameList = new ArrayList<String>();
+    List<SongInfo> listsong;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,9 +95,13 @@ public class MainActivity extends AppCompatActivity {
             String songSize = cursor.getString(3);
             arrayList.add(songPath);
             */
-            arrayList=new ArrayList<>();
-            arrayList=Utils.getmusic(this);
-            final ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, arrayList);
+//            songNameList=new ArrayList<>();
+            listsong = new ArrayList<>();
+            listsong=Utils.getmusic(this);
+            for(int i=0;i<listsong.size();i++){
+                songNameList.add(listsong.get(i).songName);
+            }
+            final ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, songNameList);
             listView = (ListView) findViewById(R.id.listview);
 
             listView.setAdapter(adapter);
@@ -132,14 +137,17 @@ public class MainActivity extends AppCompatActivity {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item
                 .getMenuInfo();
         int songid = (int) info.id;
-        String path = arrayList.get(songid).toString();
+        String path = listsong.get(songid).songPath;
         switch (item.getItemId()){
+            //播放
             case 0:
                 play(path);
                 break;
+            //停止
             case 1:
                 mediaPlayer.stop();
                 break;
+            //单曲循环
             case 2:
                 boolean loop1 = mediaPlayer.isLooping();
                 if(loop1){
@@ -148,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
                     mediaPlayer.setLooping(!loop1);
                 }
                 break;
+            //暂停
             case 3:
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
@@ -155,12 +164,14 @@ public class MainActivity extends AppCompatActivity {
                     mediaPlayer.start();
                 }
                 break;
+            //播放上一曲
             case 4:
-                String p1 = arrayList.get(songid-1).toString();
+                String p1 = listsong.get(songid-1).songPath;
                 play(p1);
                 break;
+            //播放下一曲
             case 5:
-                String p2 = arrayList.get(songid+1).toString();
+                String p2 = listsong.get(songid+1).songPath;
                 play(p2);
                 break;
 
@@ -229,10 +240,12 @@ public class MainActivity extends AppCompatActivity {
 
 class Utils {
     //定义一个集合，存放从本地读取到的内容
-    public static ArrayList<String> list=new ArrayList<>();
-    public static ArrayList<String> getmusic(Context context) {
+//    public static ArrayList<String> list=new ArrayList<>();
+    public  static  List<SongInfo> listsong;
+    public  static SongInfo songInfo;
+    public static List<SongInfo> getmusic(Context context) {
 
-        list = new ArrayList<>();
+        listsong = new ArrayList<>();
 
 
         Cursor cursor = context.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
@@ -240,17 +253,28 @@ class Utils {
 
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                String songName = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME));
-                String singer = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
-                String songPath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
-                int songTime = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION));
-                Long songsize = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE));
-                list.add(songPath);
+                songInfo = new SongInfo();
+                songInfo.songName = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME));
+                songInfo.singer = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+                songInfo.songPath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
+                if(songInfo.songName.contains("-") )
+                {
+                    String[] str = songInfo.songName.split("-");
+                    songInfo.singer=str[0];
+                    songInfo.songName=str[1];
+                }
+//                else if(songInfo.songName.contains("."))
+//                {
+//                    String[] str1 = songInfo.songName.split(".");
+//                    songInfo.singer=str1[0];
+//                    songInfo.songName=str1[1];
+//                }
+                listsong.add(songInfo);
             }
         }
 
         cursor.close();
-        return list;
+        return listsong;
 
     }
 
